@@ -1,0 +1,7 @@
+sentence-transformers
+elasticsearch
+langchain
+openai
+langchain-elasticsearch
+llama-index-readers-mbox
+tiktoken_encoder
