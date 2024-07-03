@@ -33,27 +33,36 @@ def read_and_extract_xml_data(fileName):
     return text
 
 
-pmid_list, no_pmid_list, pmcid_list, no_xml, pmcid_no_xml = [], [], [], [], []
-allStudy = load_json_file('pubmed/cBioportal_study.json')           # all study =411
+pmid_list, no_pmid_list, pmcid_list, no_xml, pmcid_no_xml = set(), [], [], [], []
+allStudy = load_json_file('pubmed/cBioportal_study.json')          
 
 # FIRSR STEP
 # make a list for studies have pmid and a list without pmid
+
 for study in allStudy:
     pmid_value = study.get('pmid')
-    if pmid_value:  
-        pmid_list.append(pmid_value)                                #pmid = 351
+    if pmid_value:  # some studies have multi pmids
+        print(pmid_value)
+        if len(pmid_value) > 8:
+            curr = pmid_value.split(',')
+            print(curr)
+            for id in curr:   
+                pmid_list.add(id)
+        else: 
+            pmid_list.add(pmid_value)        
     else:  # some study have no pmid
-        no_pmid_list.append(study)                                  # no pmid = 60
+        no_pmid_list.append(study)    
 
+print(pmid_list)
 print(len(pmid_list))
 print(len(no_pmid_list))
 # write_json_file('no_pmid.json',no_pmid_list)
 
 
 # SECOND STEP
-# # convert pmcid from pmid, then write a file for pmcid            #pmcid = 351
-# pmcid_list = convert_pmcid_from_pmid()
-# write_json_file('pmcid_list.json', pmcid_list)
+# convert pmcid from pmid, then write a file for pmcid
+pmcid_list = convert_pmcid_from_pmid()
+write_json_file('pubmed/pmcid_list.json', pmcid_list)
 pmcid_data = load_json_file('pubmed/pmcid_list.json')
 
 
