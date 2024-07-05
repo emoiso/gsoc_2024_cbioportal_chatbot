@@ -59,7 +59,8 @@ chain_cBio = get_openapi_chain(
 
 
 class APIRetriever(BaseRetriever):
-    """ A Openapi retriever to return the entire content from api call 
+   """ A Openapi retriever to return the entire content from api call, 
+        always pick a keyword from below question
     """
     document: List[Document]
 
