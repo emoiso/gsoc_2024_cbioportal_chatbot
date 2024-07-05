@@ -13,20 +13,10 @@ from langchain_core.output_parsers import StrOutputParser
 from operator import itemgetter
 from langchain_core.retrievers import BaseRetriever
 from langchain_core.callbacks import CallbackManagerForRetrieverRun
-#from langchain_core.documents import Document
 from typing import List
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.docstore.document import Document
 
-#Pip install langchain==0.0.343
-#langchain-core-0.0.13
-
-# """ Example for OPENAPI chain"""
-# chain_klarna = get_openapi_chain(
-#     spec="https://www.klarna.com/us/shopping/public/openai/v0/api-docs/",
-#     verbose=True
-# )
-# print(chain_klarna("What are some options for a men's large blue button down shirt"))
 
 load_dotenv()
 _ = load_dotenv(find_dotenv())  # read local .env file
@@ -61,7 +51,7 @@ chain_cBio = get_openapi_chain(
 class APIRetriever(BaseRetriever):
    """ A Openapi retriever to return the entire content from api call, 
         always pick a keyword from below question
-    """
+    """ 
     document: List[Document]
 
     def _get_relevant_documents(self, query: str, run_manager: CallbackManagerForRetrieverRun) -> str:
