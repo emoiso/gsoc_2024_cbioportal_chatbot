@@ -123,106 +123,101 @@ class pubmedLoader(BaseLoader):
 
 loader = DirectoryLoader('loaded_pmc', 
                         loader_cls=pubmedLoader, show_progress=True)
-
-# loader = pubmedLoader('loaded_pmc/PMC2671642.txt')
-# load and split
-docs = loader.load()  
-
-with open('250_loaded_pubmeded.txt', 'w') as f:
-    f.write(str(docs))
+# docs = loader.load()  
 
 
-# load_dotenv()
-# _ = load_dotenv(find_dotenv())  # read local .env file
 
-# #Azure_OpenAI llm    
-# llm_azure = AzureChatOpenAI(
-#     azure_endpoint=os.environ["AZURE_OPENAI_ENDPOINT"], 
-#     openai_api_key=os.environ["AZURE_OPENAI_API_KEY"],
-#     openai_api_version=os.environ["OPENAI_API_VERSION"],
-#     deployment_name=os.environ["DEPLOYMENT_NAME"],
-#     openai_api_type=os.environ["OPENAI_API_TYPE"]
-# )
+load_dotenv()
+_ = load_dotenv(find_dotenv())  # read local .env file
 
-# embeddings = AzureOpenAIEmbeddings(
-#     azure_deployment=os.environ["DEPLOYMENT_NAME_EMBEDDING"],
-#     openai_api_version=os.environ["OPENAI_API_VERSION"],
-#     azure_endpoint=os.environ["AZURE_OPENAI_ENDPOINT"],
-#     api_key=os.environ["AZURE_OPENAI_API_KEY"]
-# )
+#Azure_OpenAI llm    
+llm_azure = AzureChatOpenAI(
+    azure_endpoint=os.environ["AZURE_OPENAI_ENDPOINT"], 
+    openai_api_key=os.environ["AZURE_OPENAI_API_KEY"],
+    openai_api_version=os.environ["OPENAI_API_VERSION"],
+    deployment_name=os.environ["DEPLOYMENT_NAME"],
+    openai_api_type=os.environ["OPENAI_API_TYPE"]
+)
 
-# vectordb = Chroma.from_documents(
-#     documents=docs,
-#     embedding=embeddings,
-#     persist_directory="vectordb/chroma/pubmed/test"
-# )
+embeddings = AzureOpenAIEmbeddings(
+    azure_deployment=os.environ["DEPLOYMENT_NAME_EMBEDDING"],
+    openai_api_version=os.environ["OPENAI_API_VERSION"],
+    azure_endpoint=os.environ["AZURE_OPENAI_ENDPOINT"],
+    api_key=os.environ["AZURE_OPENAI_API_KEY"]
+)
 
-# vectordb.persist()
+vectordb = Chroma.from_documents(
+    documents=docs,
+    embedding=embeddings,
+    persist_directory="vectordb/chroma/pubmed/test"
+)
 
-# retriever = vectordb.as_retriever(k=5)
+vectordb.persist()
 
-# # # self-query retriever
-# # document_content_description = "full text of Pubmed papers "
-# # metadata_field_info = [
-# #     AttributeInfo(
-# #         name="pmc_id",
-# #         description="The id for pubmed paper, each id is unique",
-# #         type="string",
-# #     ),
-# #     AttributeInfo(
-# #         name="title",
-# #         description="The title for pubmed paper",
-# #         type="string",
-# #     ),]
-# # SelfQuery_Retriever = SelfQueryRetriever.from_llm(
-# #     llm_azure,
-# #     vectordb,
-# #     document_content_description,
-# #     AttributeInfo
-# # )
+retriever = vectordb.as_retriever(k=5)
 
-
-# # build prompt template
-# ANSWER_PROMPT = """You are a professional assistant. If there are pmcid or pmid in question,
-#                 Only use the context has pmcid in metadata matched
-#                 Answer the question based only on the following context, 
-#                 and return the pmc_id of all the contexts :
-# {context}
-# Question: {question}
-# """
-
-# prompt = ChatPromptTemplate.from_template(ANSWER_PROMPT)
-# # build a chain # lambda x:
-# chain = (
-#     {"context": retriever, "question": RunnablePassthrough()} 
-#     | prompt  # choose a prompt
-#     | llm_azure  # choose a llm
-#     | StrOutputParser()
+# # self-query retriever
+# document_content_description = "full text of Pubmed papers "
+# metadata_field_info = [
+#     AttributeInfo(
+#         name="pmc_id",
+#         description="The id for pubmed paper, each id is unique",
+#         type="string",
+#     ),
+#     AttributeInfo(
+#         name="title",
+#         description="The title for pubmed paper",
+#         type="string",
+#     ),]
+# SelfQuery_Retriever = SelfQueryRetriever.from_llm(
+#     llm_azure,
+#     vectordb,
+#     document_content_description,
+#     AttributeInfo
 # )
 
 
-# def getAnswer(question):
-#     ans = chain.invoke(question)
-#     return ans
+# build prompt template
+ANSWER_PROMPT = """You are a professional assistant. If there are pmcid or pmid in question,
+                Only use the context has pmcid in metadata matched
+                Answer the question based only on the following context, 
+                and return the pmc_id of all the contexts :
+{context}
+Question: {question}
+"""
+
+prompt = ChatPromptTemplate.from_template(ANSWER_PROMPT)
+# build a chain # lambda x:
+chain = (
+    {"context": retriever, "question": RunnablePassthrough()} 
+    | prompt  # choose a prompt
+    | llm_azure  # choose a llm
+    | StrOutputParser()
+)
 
 
-# # User Interface
-# def predict(message, history):
-#     history_langchain_format = []
-#     for human, ai in history:
-#         history_langchain_format.append(HumanMessage(content=human))
-#         history_langchain_format.append(AIMessage(content=ai))
-#     history_langchain_format.append(HumanMessage(content=message))
-#     gpt_response = getAnswer(message)
-#     return gpt_response
+def getAnswer(question):
+    ans = chain.invoke(question)
+    return ans
 
 
-# chatbot = gr.Chatbot(  # uploaded image of user and cBioportal as avatar 
-#     [],
-#     elem_id="chatbot",
-#     bubble_full_width=False,
-#     avatar_images=("sample_data/user_avatar.png", 
-#                    "sample_data/chatbot_avatar.png"),
-# )
+# User Interface
+def predict(message, history):
+    history_langchain_format = []
+    for human, ai in history:
+        history_langchain_format.append(HumanMessage(content=human))
+        history_langchain_format.append(AIMessage(content=ai))
+    history_langchain_format.append(HumanMessage(content=message))
+    gpt_response = getAnswer(message)
+    return gpt_response
 
-# gr.ChatInterface(predict, title="cBioPortal pubmed ChatBot", chatbot=chatbot).launch()
+
+chatbot = gr.Chatbot(  # uploaded image of user and cBioportal as avatar 
+    [],
+    elem_id="chatbot",
+    bubble_full_width=False,
+    avatar_images=("sample_data/user_avatar.png", 
+                   "sample_data/chatbot_avatar.png"),
+)
+
+gr.ChatInterface(predict, title="cBioPortal pubmed ChatBot", chatbot=chatbot).launch()

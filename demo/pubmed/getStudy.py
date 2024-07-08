@@ -1,8 +1,8 @@
 import json 
-from indra_nxml_extraction import id_lookup
-from download_pmc_s3 import download_pmc_s3 
+from data.indra_nxml_extraction import id_lookup
+from data.download_pmc_s3 import download_pmc_s3 
 import os
-from indra_nxml_extraction import get_xml, get_xml_from_file, extract_text
+from data.indra_nxml_extraction import get_xml, get_xml_from_file, extract_text
 from lxml import etree
 from bs4 import BeautifulSoup
 
@@ -38,7 +38,6 @@ allStudy = load_json_file('pubmed/cBioportal_study.json')
 
 # FIRSR STEP
 # make a list for studies have pmid and a list without pmid
-
 for study in allStudy:
     pmid_value = study.get('pmid')
     if pmid_value:  # some studies have multi pmids

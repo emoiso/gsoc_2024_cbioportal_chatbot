@@ -1,7 +1,6 @@
 import codecs
 import json
-from llama_index.readers.mbox import MboxReader
-from langchain_elasticsearch import ElasticsearchStore
+# from llama_index.readers.mbox import MboxReader
 from langchain_openai import OpenAIEmbeddings
 from langchain_openai import OpenAI
 from langchain.embeddings.huggingface import HuggingFaceEmbeddings
