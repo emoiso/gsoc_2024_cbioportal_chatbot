@@ -1,13 +1,3 @@
-# Template for Project Reports
-
-Review and edit 
-
-* _config.yml
-* contributors.csv 
-* index.md 
-* Example reports in _reports
-* Edit this README with a short project description
-
-# Template Source
-
-https://github.com/cannin/project_report_template
+version https://git-lfs.github.com/spec/v1
+oid sha256:79ea1ca42b0107548f45d02ca366c93fbd99f70921df6bb6328d0c47499e5912
+size 248

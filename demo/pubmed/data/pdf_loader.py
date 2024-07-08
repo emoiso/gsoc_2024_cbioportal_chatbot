@@ -1,9 +1,3 @@
-
-from langchain_community.document_loaders import PyMuPDFLoader
-
-
-loader = PyMuPDFLoader("pubmed/paper_on_pmc_but_no_full_xml_btr694.pdf")
-data = loader.load()
-
-with open('pasredPDF.txt', 'w') as f:
-    f.write(str(data))
+version https://git-lfs.github.com/spec/v1
+oid sha256:a7fe26b15c40a287b33a5acc18a642408801646b2b819ddeab0eebe944d7ae3d
+size 222
