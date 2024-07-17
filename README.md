@@ -1,15 +1,17 @@
-# Chatbot for cBioportal
+# Chatbot for cBioPortal for Cancer Genomics
 Contributor: Xinling Wang
 
 Mentors: Augustin Luna, Ruslan Forostianov, Meysam Ghaffari
 ## About Project :
-This project used route logic to combine 4 chatbots, and defined a function to choose chatbot depending on user query.
+This project has four chatbots which was trained on different datasets. Also, the project used route logic to combine 4 chatbots, and wrote a defined function to choose chatbot depending on user query.
 
-This chatbot is trained on
-1. Documentation site: https://github.com/cBioPortal/cbioportal/tree/master/docs 
+Each chatbot has its own loader, metadate, splitter, prompt, retriever and independent vectorDB.
+
+### Details about each chatbot:
+1. Dataset : Documentation site: https://github.com/cBioPortal/cbioportal/tree/master/docs 
    
-2. Last 3 years of Google Conversation : https://groups.google.com/g/cbioportal 
+2. Dataset : Last 3 years of Google Conversation : https://groups.google.com/g/cbioportal 
 
-3. Pubmed papers from all studies
+3. Dataset : Pubmed papers from all studies
 
-4. cBioportal Endpoints (getAllstudiesUsingGET and getSamplesBykeywordsUsingGET)  https://www.cbioportal.org/api/swagger-ui/index.html 
+4. Dataset : cBioportal Endpoints (getAllstudiesUsingGET and getSamplesBykeywordsUsingGET)  https://www.cbioportal.org/api/swagger-ui/index.html 
