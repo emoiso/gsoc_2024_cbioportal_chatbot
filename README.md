@@ -2,7 +2,10 @@
 Contributor: Xinling Wang
 
 Mentors: Augustin Luna, Ruslan Forostianov, Meysam Ghaffari
-## This chatbot is trained on :
+## About Project :
+This project used route logic to combine 4 chatbots, and defined a function to choose chatbot depending on user query.
+
+This chatbot is trained on
 1. Documentation site: https://github.com/cBioPortal/cbioportal/tree/master/docs 
    
 2. Last 3 years of Google Conversation : https://groups.google.com/g/cbioportal 
