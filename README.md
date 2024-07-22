@@ -12,6 +12,6 @@ Each chatbot has its own loader, metadate, splitter, prompt, retriever and indep
    
 2. Dataset : Last 3 years of Google Conversation : https://groups.google.com/g/cbioportal 
 
-3. Dataset : Pubmed papers from all studies
+3. Dataset : Pubmed papers from all studies : https://github.com/cannin/gsoc_2024_cbioportal_chatbot/blob/main/demo/pubmed/data/cBioportal_study.json
 
 4. Dataset : cBioportal Endpoints (getAllstudiesUsingGET and getSamplesBykeywordsUsingGET)  https://www.cbioportal.org/api/swagger-ui/index.html 
