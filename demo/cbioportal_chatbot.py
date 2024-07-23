@@ -12,6 +12,10 @@ from openapi.cBioPortal_api_demo import get_openapi_chain, call_openapi
 from pubmed.pubmed_demo import get_pubmed_chain
 from mbox.mbox_chatbot import get_mbox_chain
 from documentation_site.markdown_demo import get_documentation_site_chain
+from all import get_all_chain
+import time
+import openai
+
 
 load_dotenv()
 _ = load_dotenv(find_dotenv())  # read local .env file
@@ -32,25 +36,26 @@ embeddings = AzureOpenAIEmbeddings(
     api_key=os.environ["AZURE_OPENAI_API_KEY"]
 )
 
-# or 'cbioportal', or 'study', 
-classify_chain = (ChatPromptTemplate.from_template(
-    """Given the user question and description below, classify it as either being about 'pubmed', 'documentation'
-    or 'issue', or 'other'. 
 
-    pubmed: including PMC papers in Cancer Genomics domain
+classify_chain = (ChatPromptTemplate.from_template(
+    """Given the user question and description below, classify it as either being about 'pmc', 'documentation',
+     'study' or 'issue', or 'other'. 
+
+    pmc: including PMC papers in Cancer Genomics domain
     issue:  including discussions of issues while using cBioportal
     documentation: including intro and user guide for cBioportal
     study: studies in cbioportal
-
+    other: cannot be classify by words above or need more than one words to classify
 
     Do not respond with more than one word.
     Question: {question}                    
     Classification:""") | llm_azure | StrOutputParser())
 
 
-pubmed_chain = get_pubmed_chain()
+pmc_chain = get_pubmed_chain()
 mbox_chain = get_mbox_chain()
 documentation_site_chain = get_documentation_site_chain()
+all_chain = get_all_chain()
 
 
 def route(info):
@@ -59,7 +64,7 @@ def route(info):
         return mbox_chain
 
     elif "pubmed" in info['topic'].lower():  # good
-        return pubmed_chain
+        return pmc_chain
 
     elif "documentation" in info['topic'].lower():
         return documentation_site_chain
@@ -70,9 +75,7 @@ def route(info):
         return chain
 
     else:
-        return mbox_chain
-
-# full_chain = {'topic': classify_chain, "question": lambda x: x["question"]} | RunnableLambda(route)
+        return all_chain
 
 
 def getAnswer(question):
@@ -87,8 +90,21 @@ def predict(message, history):
         history_langchain_format.append(HumanMessage(content=human))
         history_langchain_format.append(AIMessage(content=ai))
     history_langchain_format.append(HumanMessage(content=message))
-    gpt_response = getAnswer(message)
-    return gpt_response
+    try:
+        gpt_response = getAnswer(message)
+    except openai.BadRequestError as e:
+        gpt_response = "Sorry, no study found. Please try again with keywords that applies to name and cancer type of the studies" 
+   
+    except openai.APIConnectionError as e:
+        gpt_response = ("Server connection error: {e.__cause__}") 
+
+    partial_message = ""
+    for i in range(len(gpt_response)):
+        partial_message += gpt_response[i]
+        time.sleep(0.01)
+        yield partial_message    
+        
+    
 
 
 chatbot = gr.Chatbot(  # uploaded image of user and cBioportal as avatar 
@@ -102,5 +118,6 @@ chatbot = gr.Chatbot(  # uploaded image of user and cBioportal as avatar
 gr.ChatInterface(
                 predict,
                 title="cBioPortal ChatBot", 
-                examples=['How to install cBioportal in docker', 'What pubmed papers used in studyID acbc_mskcc_2015 ?','Give me some studies related to bone'],
+                examples=['How to install cBioportal in docker', 'Can u summarize pmc_id PMC2671642?', 
+                          'Give me some studies related to bone', 'can u give me some samples related to TCGA-OR-A5J1-01', 'Issue about uploading-Analyzing public/personal data','Does cbioportal taste like chocolate'],
                 chatbot=chatbot).launch()
