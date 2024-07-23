@@ -93,7 +93,7 @@ def predict(message, history):
     try:
         gpt_response = getAnswer(message)
     except openai.BadRequestError as e:
-        gpt_response = "Sorry, no study found. Please try again with keywords that applies to name and cancer type of the studies" 
+        gpt_response = "Sorry, no keywords of study found. Please try again with keywords that applies to name and cancer type of the studies" 
    
     except openai.APIConnectionError as e:
         gpt_response = ("Server connection error: {e.__cause__}") 
