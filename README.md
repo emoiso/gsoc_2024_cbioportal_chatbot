@@ -15,3 +15,6 @@ Each chatbot has its own loader, metadate, splitter, prompt, retriever and indep
 3. Dataset : 261 PubMed Central papers from all (~400) studies : https://github.com/cannin/gsoc_2024_cbioportal_chatbot/blob/main/demo/pubmed/data/cBioportal_study.json
 
 4. Dataset : cBioportal Endpoints (getAllstudiesUsingGET and getSamplesBykeywordsUsingGET)  https://www.cbioportal.org/api/swagger-ui/index.html 
+
+### Vector Database
+Used Chroma to store embeddings. Exported vector databases with metadata in CSV files. https://drive.google.com/drive/folders/12lArAbk3kI8SkPb5W0ynn0eBCjCPWjTV?usp=sharing 
