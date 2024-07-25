@@ -16,5 +16,5 @@ Each chatbot has its own loader, metadate, splitter, prompt, retriever and indep
 
 4. Dataset : cBioportal Endpoints (getAllstudiesUsingGET and getSamplesBykeywordsUsingGET)  https://www.cbioportal.org/api/swagger-ui/index.html 
 
-### Vector Database
+### Embeddings
 Used Chroma to store embeddings. Exported vector databases with metadata in CSV files. https://drive.google.com/drive/folders/12lArAbk3kI8SkPb5W0ynn0eBCjCPWjTV?usp=sharing 
