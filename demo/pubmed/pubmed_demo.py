@@ -25,6 +25,14 @@ from collections import defaultdict
 from langchain_community.document_loaders import PyMuPDFLoader
 import chromadb
 import time
+from langchain_core.runnables import RunnableLambda
+from langchain.chains import create_history_aware_retriever
+from langchain_core.prompts import MessagesPlaceholder
+from langchain.chains.combine_documents import create_stuff_documents_chain
+from langchain.chains import create_retrieval_chain
+
+
+
 
 #langchain-core==0.2.3
 def load_json_file(path):
@@ -189,6 +197,7 @@ def load_docs(dir, loader):
 
 
 # docs = load_docs('demo/pubmed/pdf', PDFLoader)
+# docs = load_docs('demo/loaded_pmc', pubmedLoader)
 # print(len(docs))
 
 load_dotenv()
@@ -198,14 +207,14 @@ _ = load_dotenv(find_dotenv())  # read local .env file
 llm_azure = AzureChatOpenAI(
     azure_endpoint=os.environ["AZURE_OPENAI_ENDPOINT"], 
     openai_api_key=os.environ["AZURE_OPENAI_API_KEY"],
-    openai_api_version=os.environ["OPENAI_API_VERSION"],
-    deployment_name=os.environ["DEPLOYMENT_NAME"],
-    openai_api_type=os.environ["OPENAI_API_TYPE"]
+    openai_api_version=os.environ["AZURE_OPENAI_API_VERSION_4"],
+    deployment_name=os.environ["DEPLOYMENT_NAME_4"],
+    openai_api_type=os.environ["AZURE_OPENAI_API_TYPE"]
 )
 
 embeddings = AzureOpenAIEmbeddings(
     azure_deployment=os.environ["DEPLOYMENT_NAME_EMBEDDING"],
-    openai_api_version=os.environ["OPENAI_API_VERSION"],
+    openai_api_version=os.environ["AZURE_OPENAI_API_VERSION_4"],
     azure_endpoint=os.environ["AZURE_OPENAI_ENDPOINT"],
     api_key=os.environ["AZURE_OPENAI_API_KEY"]
 )
@@ -247,145 +256,129 @@ def update_vectordb_with_docs(docs, embeddings, base_persist_directory):
 # vectordb_total = update_vectordb_with_docs(docs, embeddings, "vectordb/chroma/pubmed/pdf2")
 vectordb_total = Chroma(persist_directory="demo/vectordb/chroma/pubmed/paper_and_pdf", embedding_function=embeddings)
 
-# retriever = vectordb.as_retriever(k=5)
 
-# self-query retriever
-document_content_description = "full text of Pubmed papers "
-metadata_field_info = [
-    AttributeInfo(
-        name="pmc_id",
-        description="The id for pubmed paper, start with PMC, useful to search",
-        type="string",
-    ),
-    AttributeInfo(
-        name="title",
-        description="The title for pubmed paper",
-        type="string",
-    ),
-    AttributeInfo(
-        name="name",
-        description="The name of study using this pubmed paper",
-        type="string",
-    ),
-    AttributeInfo(
-        name="description",
-        description="The description of study using this pubmed paper",
-        type="string",
-    ),
-    # AttributeInfo(
-    #     name="publicStudy",
-    #     description=" Whether the study is public",
-    #     type="boolean",
-    # ),
-    # AttributeInfo(
-    #     name="citation",
-    #     description="The citation of study using this pubmed paper",
-    #     type="string",
-    # ),
-    AttributeInfo(
-        name="groups",
-        description="The groups of study using this pubmed paper",
-        type="string",
-    ),
-    # AttributeInfo(
-    #     name="status",
-    #     description="The status of study using this pubmed paper",
-    #     type="int",
-    # ),
-    # AttributeInfo(
-    #     name="importDate",
-    #     description="The importDate of study using this pubmed paper",
-    #     type="date",
-    # ),
-    AttributeInfo(
-        name="allSampleCount",
-        description="The allSampleCount of study using this pubmed paper",
-        type="int",
-    ),
-    # AttributeInfo(
-    #     name="readPermission",
-    #     description="The readPermission of study using this pubmed paper",
-    #     type="boolean",
-    # ),
-    AttributeInfo(
-        name="studyId",
-        description="The studyId of study using this pubmed paper",
-        type="string",
-    ),
-    # AttributeInfo(
-    #     name="cancerTypeId",
-    #     description="The cancerTypeId of study using this pubmed paper",
-    #     type="string",
-    # ),
-    # AttributeInfo(
-    #     name="referenceGenome",
-    #     description="The referenceGenome of study using this pubmed paper",
-    #     type="string",
-    # ),
-    AttributeInfo(
-        name="name",
-        description="The name of study using this pubmed paper",
-        type="string",
-    ),
-]
-SelfQuery_Retriever = SelfQueryRetriever.from_llm(
-    llm_azure,
-    vectordb_total,
-    document_content_description,
-    metadata_field_info
+# # self-query retriever
+# document_content_description = "full text of Pubmed papers "
+# metadata_field_info = [
+#     AttributeInfo(
+#         name="pmc_id",
+#         description="The id for pubmed paper, start with PMC, useful to search",
+#         type="string",
+#     ),
+#     AttributeInfo(
+#         name="title",
+#         description="The title for pubmed paper",
+#         type="string",
+#     ),
+#     AttributeInfo(
+#         name="name",
+#         description="The name of study using this pubmed paper",
+#         type="string",
+#     ),
+#     AttributeInfo(
+#         name="description",
+#         description="The description of study using this pubmed paper",
+#         type="string",
+#     ),
+#     AttributeInfo(
+#         name="groups",
+#         description="The groups of study using this pubmed paper",
+#         type="string",
+#     ),
+#     AttributeInfo(
+#         name="allSampleCount",
+#         description="The allSampleCount of study using this pubmed paper",
+#         type="int",
+#     ),
+#     AttributeInfo(
+#         name="studyId",
+#         description="The studyId of study using this pubmed paper",
+#         type="string",
+#     ),
+#     AttributeInfo(
+#         name="name",
+#         description="The name of study using this pubmed paper",
+#         type="string",
+#     ),
+# ]
+# SelfQuery_Retriever = SelfQueryRetriever.from_llm(
+#     llm_azure,
+#     vectordb_total,
+#     document_content_description,
+#     metadata_field_info
+# )
+
+
+retriever = vectordb_total.as_retriever(k=3)
+
+# build prompt template
+ANSWER_PROMPT = ("You are a professional assistant. Answer questions using content & metadata & chat history."
+                 "Also, ignore the context if it is a reference."
+                 "Answer the question based only on the following context, "
+                 " and return the pmc_id, pmid, studyID of all the contexts :"
+"{context}"
+"Question: {question}"
 )
 
 
-# build prompt template
-ANSWER_PROMPT = """You are a professional assistant. Answer questions using content & metadata.
-                Also, ignore the context if it is a reference.
-                Answer the question based only on the following context, 
-                and return the pmc_id, pmid, studyID of all the contexts :
-{context}
-Question: {question}
-"""
-
 prompt = ChatPromptTemplate.from_template(ANSWER_PROMPT)
+
+# qa_prompt = ChatPromptTemplate.from_messages(
+#     [
+#         ("system", ANSWER_PROMPT),
+#         MessagesPlaceholder("chat_history"),
+#         ("human", "{input}"),
+#     ]
+# )
+
+# history_aware_retriever = create_history_aware_retriever(llm_azure, retriever, qa_prompt)
 
 
 def get_pubmed_chain():
     chain = (
-        {"context": SelfQuery_Retriever, "question": RunnablePassthrough()} 
+        RunnableLambda(lambda x: x['question']) |
+        {"context": retriever, "question": RunnablePassthrough()} 
         | prompt  # choose a prompt
         | llm_azure  # choose a llm
         | StrOutputParser()
     )
+    # question_answer_chain = create_stuff_documents_chain(llm_azure, qa_prompt)
+    # final_chain = create_retrieval_chain(history_aware_retriever, question_answer_chain)
     return chain
 
 
-# build a chain # lambda x:
-def get_response(question):
-    chain = get_pubmed_chain()
-    ans = chain.invoke(question)
-    return ans
+def main():
+    # build a chain # lambda x:
+    def get_response(question):
+        chain = get_pubmed_chain()
+        ans = chain.invoke(question)
+        return ans
 
 
-# # User Interface
-# def predict(message, history):
-#     history_langchain_format = []
-#     for human, ai in history:
-#         history_langchain_format.append(HumanMessage(content=human))
-#         history_langchain_format.append(AIMessage(content=ai))
-#     history_langchain_format.append(HumanMessage(content=message))
-#     gpt_response = get_response(message)
-#     return gpt_response
+    # User Interface
+    def predict(message, history):
+        history_langchain_format = []
+        for human, ai in history:
+            history_langchain_format.append(HumanMessage(content=human))
+            history_langchain_format.append(AIMessage(content=ai))
+        history_langchain_format.append(HumanMessage(content=message))
+        gpt_response = get_response(message)
+        return gpt_response
 
 
-# chatbot = gr.Chatbot(  # uploaded image of user and cBioportal as avatar 
-#     [],
-#     elem_id="chatbot",
-#     bubble_full_width=False,
-#     avatar_images=("demo/sample_data/user_avatar.png", 
-#                    "demo/sample_data/chatbot_avatar.png"),
-# )
+    chatbot = gr.Chatbot(  # uploaded image of user and cBioportal as avatar 
+        [],
+        elem_id="chatbot",
+        bubble_full_width=False,
+        avatar_images=("demo/sample_data/user_avatar.png", 
+                    "demo/sample_data/chatbot_avatar.png"),
+    )
 
-# gr.ChatInterface(
-#                  predict, 
-#                  title="cBioPortal pubmed ChatBot", 
-#                  examples=['What is PMC_ID PMC2671642 about?', 'What papers used in studyID acbc_mskcc_2015'],
-#                  chatbot=chatbot).launch()
+    gr.ChatInterface(
+                    predict, 
+                    title="cBioPortal pubmed ChatBot", 
+                    examples=['What is PMC_ID PMC2671642 about?', 'What papers used in studyID acbc_mskcc_2015'],
+                    chatbot=chatbot).launch()
+
+if __name__ == '__main__':
+    main.run()
