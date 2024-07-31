@@ -24,31 +24,32 @@ _ = load_dotenv(find_dotenv())  # read local .env file
 llm_azure = AzureChatOpenAI(
     azure_endpoint=os.environ["AZURE_OPENAI_ENDPOINT"], 
     openai_api_key=os.environ["AZURE_OPENAI_API_KEY"],
-    openai_api_version=os.environ["OPENAI_API_VERSION"],
-    deployment_name=os.environ["DEPLOYMENT_NAME"],
-    openai_api_type=os.environ["OPENAI_API_TYPE"]
+    openai_api_version=os.environ["AZURE_OPENAI_API_VERSION_4"],
+    deployment_name=os.environ["DEPLOYMENT_NAME_4"],
+    openai_api_type=os.environ["AZURE_OPENAI_API_TYPE"]
 )
 
 embeddings = AzureOpenAIEmbeddings(
     azure_deployment=os.environ["DEPLOYMENT_NAME_EMBEDDING"],
-    openai_api_version=os.environ["OPENAI_API_VERSION"],
+    openai_api_version=os.environ["AZURE_OPENAI_API_VERSION_4"],
     azure_endpoint=os.environ["AZURE_OPENAI_ENDPOINT"],
     api_key=os.environ["AZURE_OPENAI_API_KEY"]
 )
 
 
 classify_chain = (ChatPromptTemplate.from_template(
-    """Given the user question and description below, classify it as either being about 'pmc', 'documentation',
-     'study' or 'issue', or 'other'. 
+    """Given the user question and description below, classify it as either being about 
+    'pmc', 'documentation', 'issue', 'study' or 'other'. the order of below topic is from highest preference to lowest
 
-    pmc: including PMC papers in Cancer Genomics domain
-    issue:  including discussions of issues while using cBioportal
+    pmc: including PMC papers. Choose this if user query mention paper title or anything related to paper
     documentation: including intro and user guide for cBioportal
-    study: studies in cbioportal
-    other: cannot be classify by words above or need more than one words to classify
+    issue:  including discussions of issues while using cBioportal
+    study: studies and samples in cbioportal.
+    other: including PMC papers used in studies, intro and user guide for cBioportal, discussions of issues while using cBioportal.
 
     Do not respond with more than one word.
-    Question: {question}                    
+    Question: {question}  
+    Chat_history: {chat_history}                  
     Classification:""") | llm_azure | StrOutputParser())
 
 
@@ -78,9 +79,12 @@ def route(info):
         return all_chain
 
 
+chat_history = []
+
+
 def getAnswer(question):
-    ans = {'topic': classify_chain, "question": lambda x: x} | RunnableLambda(route)
-    return ans.invoke(question)
+    ans = ({'topic': classify_chain, "question": lambda x: x} | RunnableLambda(route))
+    return ans.invoke({"question": question, "chat_history": chat_history})
 
 
 # User Interface
@@ -92,19 +96,21 @@ def predict(message, history):
     history_langchain_format.append(HumanMessage(content=message))
     try:
         gpt_response = getAnswer(message)
+        chat_history.extend([HumanMessage(content=message), gpt_response])
     except openai.BadRequestError as e:
         gpt_response = "Sorry, no keywords of study found. Please try again with keywords that applies to name and cancer type of the studies" 
    
     except openai.APIConnectionError as e:
-        gpt_response = ("Server connection error: {e.__cause__}") 
+        gpt_response = ("Server connection error: {e}") 
+
+    except Exception as e:
+        gpt_response = ("Error: {e}")
 
     partial_message = ""
     for i in range(len(gpt_response)):
         partial_message += gpt_response[i]
         time.sleep(0.01)
         yield partial_message    
-        
-    
 
 
 chatbot = gr.Chatbot(  # uploaded image of user and cBioportal as avatar 
@@ -118,6 +124,6 @@ chatbot = gr.Chatbot(  # uploaded image of user and cBioportal as avatar
 gr.ChatInterface(
                 predict,
                 title="cBioPortal ChatBot", 
-                examples=['How to install cBioportal in docker', 'Can u summarize pmc_id PMC2671642?', 
-                          'Give me some studies related to bone', 'can u give me some samples related to TCGA-OR-A5J1-01', 'Issue about uploading-Analyzing public/personal data','Does cbioportal taste like chocolate'],
+                examples=['How to install cBioportal in docker', 'what are important gene list in "Comprehensive molecular portraits of human breast tumors"', 
+                          'Give me some studies related to bone', 'can u give me some samples related to TCGA-OR-A5J1-01', 'Tell me a joke'],
                 chatbot=chatbot).launch()
