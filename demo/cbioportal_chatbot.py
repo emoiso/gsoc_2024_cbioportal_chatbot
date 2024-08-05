@@ -20,6 +20,10 @@ import openai
 load_dotenv()
 _ = load_dotenv(find_dotenv())  # read local .env file
 
+os.environ["LANGCHAIN_TRACING_V2"] = "true"
+os.environ["LANGCHAIN_API_KEY"] = "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"
+
+
 #Azure_OpenAI llm    
 llm_azure = AzureChatOpenAI(
     azure_endpoint=os.environ["AZURE_OPENAI_ENDPOINT"], 
@@ -39,13 +43,13 @@ embeddings = AzureOpenAIEmbeddings(
 
 classify_chain = (ChatPromptTemplate.from_template(
     """Given the user question and description below, classify it as either being about 
-    'pmc', 'documentation', 'issue', 'study' or 'other'. the order of below topic is from highest preference to lowest
+    'pmc', 'documentation', 'issue', 'study' or 'all_chains'. the order of below topic is from highest preference to lowest
 
     pmc: including PMC papers. Choose this if user query mention paper title or anything related to paper
     documentation: including intro and user guide for cBioportal
     issue:  including discussions of issues while using cBioportal
     study: studies and samples in cbioportal.
-    other: including PMC papers used in studies, intro and user guide for cBioportal, discussions of issues while using cBioportal.
+    all_chains: including all info from other topics. Choose it if u are not sure which topic fits.
 
     Do not respond with more than one word.
     Question: {question}  
@@ -57,20 +61,23 @@ pmc_chain = get_pubmed_chain()
 mbox_chain = get_mbox_chain()
 documentation_site_chain = get_documentation_site_chain()
 all_chain = get_all_chain()
+chain_info = ""
 
 
 def route(info):
+    global chain_info
     print(info)
+    chain_info = info['topic']
     if "issue" in info['topic'].lower():
         return mbox_chain
 
-    elif "pubmed" in info['topic'].lower():  # good
+    elif "pubmed" in info['topic'].lower(): 
         return pmc_chain
 
     elif "documentation" in info['topic'].lower():
         return documentation_site_chain
 
-    elif "study" in info['topic'].lower():   # good
+    elif "study" in info['topic'].lower():
         response = call_openapi(info['question'])
         chain = get_openapi_chain(response)
         return chain
@@ -89,7 +96,9 @@ def getAnswer(question):
 
 # User Interface
 def predict(message, history):
+    global chat_history  
     history_langchain_format = []
+    
     for human, ai in history:
         history_langchain_format.append(HumanMessage(content=human))
         history_langchain_format.append(AIMessage(content=ai))
@@ -97,20 +106,24 @@ def predict(message, history):
     try:
         gpt_response = getAnswer(message)
         chat_history.extend([HumanMessage(content=message), gpt_response])
+
     except openai.BadRequestError as e:
         gpt_response = "Sorry, no keywords of study found. Please try again with keywords that applies to name and cancer type of the studies" 
    
     except openai.APIConnectionError as e:
-        gpt_response = ("Server connection error: {e}") 
+        gpt_response = "Server connection error: {}".format(e)
 
     except Exception as e:
-        gpt_response = ("Error: {e}")
+        gpt_response = "Error: {}".format(e)
 
-    partial_message = ""
+    # chat_history = chat_history[:-1]    
+    partial_message = "Chain : " + chain_info + "\n"
+
     for i in range(len(gpt_response)):
         partial_message += gpt_response[i]
         time.sleep(0.01)
         yield partial_message    
+    chat_history = chat_history[-2:]
 
 
 chatbot = gr.Chatbot(  # uploaded image of user and cBioportal as avatar 
@@ -126,4 +139,4 @@ gr.ChatInterface(
                 title="cBioPortal ChatBot", 
                 examples=['How to install cBioportal in docker', 'what are important gene list in "Comprehensive molecular portraits of human breast tumors"', 
                           'Give me some studies related to bone', 'can u give me some samples related to TCGA-OR-A5J1-01', 'Tell me a joke'],
-                chatbot=chatbot).launch()
+                chatbot=chatbot).launch(share=True)
