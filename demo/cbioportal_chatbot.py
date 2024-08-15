@@ -43,13 +43,14 @@ embeddings = AzureOpenAIEmbeddings(
 
 classify_chain = (ChatPromptTemplate.from_template(
     """Given the user question and description below, classify it as either being about 
-    'pmc', 'documentation', 'issue', 'study' or 'all_chains'. the order of below topic is from highest preference to lowest
-
+    'pmc', 'documentation', 'issue', 'study' or 'all_chains'. 
+    
+    Use the chain if user mention it, like use all_chains
     pmc: including PMC papers. Choose this if user query mention paper title or anything related to paper
     documentation: including intro and user guide for cBioportal
     issue:  including discussions of issues while using cBioportal
-    study: studies and samples in cbioportal.
     all_chains: including all info from other topics. Choose it if u are not sure which topic fits.
+    study: get study and sample data by studyID, cancer name, sampleID.
 
     Do not respond with more than one word.
     Question: {question}  
@@ -62,12 +63,17 @@ mbox_chain = get_mbox_chain()
 documentation_site_chain = get_documentation_site_chain()
 all_chain = get_all_chain()
 chain_info = ""
+second_call = False
 
 
 def route(info):
-    global chain_info
+    global chain_info, second_call
     print(info)
     chain_info = info['topic']
+    if second_call:
+        second_call = False
+        chain_info = "all_chains"
+        return all_chain
     if "issue" in info['topic'].lower():
         return mbox_chain
 
@@ -96,7 +102,7 @@ def getAnswer(question):
 
 # User Interface
 def predict(message, history):
-    global chat_history  
+    global chat_history, second_call 
     history_langchain_format = []
     
     for human, ai in history:
@@ -105,6 +111,10 @@ def predict(message, history):
     history_langchain_format.append(HumanMessage(content=message))
     try:
         gpt_response = getAnswer(message)
+        if chain_info == "study" and "I didn't find anything" in gpt_response:
+            second_call = True
+            gpt_response = getAnswer(message)
+
         chat_history.extend([HumanMessage(content=message), gpt_response])
 
     except openai.BadRequestError as e:
@@ -123,7 +133,7 @@ def predict(message, history):
         partial_message += gpt_response[i]
         time.sleep(0.01)
         yield partial_message    
-    chat_history = chat_history[-2:]
+    chat_history = chat_history[-2:] #only keep latest conversation, old messages are removed
 
 
 chatbot = gr.Chatbot(  # uploaded image of user and cBioportal as avatar 
