@@ -59,12 +59,12 @@ Used Chroma to store embeddings. Exported vector databases with metadata in CSV 
         for i in range(num_lines):
             res = db1._collection.get(limit=1, offset=i, include=["embeddings"])
             doc = db1._collection.get(limit=1, offset=i, include=["documents"])
-            # metadata = db1._collection.get(limit=1, offset=i, include=["metadatas"])
+            metadata = db1._collection.get(limit=1, offset=i, include=["metadatas"])
             text_model = "text-embedding-ada-002"
             for j in range(len(res['ids'])):
                 if j < len(res['embeddings']):
                     id_value = res['ids'][j]
-                    # metadata_content = metadata['metadatas'][j]
+                    metadata_content = metadata['metadatas'][j]
                     document_content = doc["documents"][j]  
                     if document_content: 
                         embeddings = ",".join(map(str, res['embeddings'][j]))  # Convert embeddings list to comma-separated string       
