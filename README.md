@@ -34,6 +34,7 @@ Used Chroma to store embeddings. Exported vector databases with metadata in CSV 
      # raw_documents: A list of documents that are split and ready to be processed for embedding.
      # persist_directory: The directory where the vector database will be saved for future use.
      # embeddings: embedding function above
+
        vectordb = Chroma.from_documents(
            documents=raw_documents,   
            embedding=embeddings,
@@ -77,5 +78,5 @@ Used Chroma to store embeddings. Exported vector databases with metadata in CSV 
                     if document_content: 
                         embeddings = ",".join(map(str, res['embeddings'][j]))  # Convert embeddings list to comma-separated string       
                         writer.writerow([id_value, text_model, document_content, embeddings])
-   extract_and_write_data(db1, "mbox.csv")
+   extract_and_write_data(db1, "your_file.csv")
 ```
