@@ -18,7 +18,7 @@ Each chatbot has its own loader, metadate, splitter, prompt, retriever and indep
 
 ### Embeddings
 Used Chroma to store embeddings. Exported vector databases with metadata in CSV files. https://drive.google.com/drive/folders/12lArAbk3kI8SkPb5W0ynn0eBCjCPWjTV?usp=sharing 
-#### Create and reuse embedding
+#### Create and persist embedding
 ```
    embeddings = AzureOpenAIEmbeddings(
     azure_deployment=os.environ["DEPLOYMENT_NAME_EMBEDDING"],
@@ -27,20 +27,28 @@ Used Chroma to store embeddings. Exported vector databases with metadata in CSV 
     api_key=os.environ["AZURE_OPENAI_API_KEY"]
    )
 
-  # call this only for one time to create embeddings
-   def create_and_save_embedding(raw_documents, persist_directory):
+
+   def create_and_save_embedding(raw_documents, persist_directory, embeddings):
+     # This function creates embeddings using Azure OpenAI Embeddings and then saves these embeddings into a vector database using Chroma.
+     # Parameters:
+     # raw_documents: A list of documents that are split and ready to be processed for embedding.
+     # persist_directory: The directory where the vector database will be saved for future use.
+     # embeddings: embedding function above
        vectordb = Chroma.from_documents(
-           documents=raw_documents,   # raw_documents is splitted and loaded documents
+           documents=raw_documents,   
            embedding=embeddings,
            persist_directory=persist_directory
        )
        vectordb.persist()
        return vectordb
 
-   # call this to reuse vectordb 
    def reuse_embedding(persist_directory,embedding_function):
-       vectordb = Chroma(persist_directory=persist_directory, embedding_function=embedding_function)
+       # This function loads and reuses a previously saved vector database containing document embeddings.
+       # Parameters:
        # persist_directory is the path saved in the function above
+       # embeddings: embedding function above
+
+       vectordb = Chroma(persist_directory=persist_directory, embedding_function=embedding_function)
        return vectordb
 ```
 
