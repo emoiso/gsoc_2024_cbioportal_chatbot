@@ -14,14 +14,14 @@ This project is about build and train a streaming chatbot on four datasets: Docu
    - This database contains 81 markdown files
    - Used Maximal marginal relevance as search type
 
-3.  **Google Conversation chain** :
+2.  **Google Conversation chain** :
    Dataset: https://groups.google.com/g/cbioportal 
    - This chain can retrieve data from last 3 years Google Group Conversation from cBioPortal. The format of conversations is Mbox.  
    - Cleaned mbox file by deleting base64 string image and extreme long error messages, which cannot be understand by AI. Convert mbox to json, combined messages from same conversations.
    -  Used a json loader and defined separator, such as new line.
    -  Cleaned the embedding queue in vector database which cause the size to be 100 times larger
 
-4. **PubMed Central papers chain** :
+3. **PubMed Central papers chain** :
    Dataset:  https://github.com/cannin/gsoc_2024_cbioportal_chatbot/blob/main/demo/pubmed/data/cBioportal_study.json
    - This chain can retrieve data from 200+ PubMed central papers used in 411 cBioPortal studies. 
    - Defined a PubMed Central loader to download pmc papers from S3 and extract full-text to load
@@ -29,7 +29,7 @@ This project is about build and train a streaming chatbot on four datasets: Docu
    - Added study information as metadata for each chunk in PMC database
    - Contribute the PubMed Central loader to Langchain
 
-6. **cBioportal OPENAPI chain** :
+4. **cBioportal OPENAPI chain** :
    Dataset:  https://www.cbioportal.org/api/swagger-ui/index.html 
    - This chain can retrieve study and sample data from cBioportal Endpoints 
    - Defined a retriever to handle API call responses
@@ -37,7 +37,7 @@ This project is about build and train a streaming chatbot on four datasets: Docu
    - Generated a yaml file to support OpenAPI call
    - Return “Sorry, no keywords of study found. ” when the default of api (return all the studies) is called.
      
-8. **Making plots chain** :
+5. **Making plots chain** :
    - This chain can retrieve data from defined markdown plotting code example.
    - This chain can generate code of making plot from study and sample informations.
    - Bar chart, pie chart and scatter chart are all available to generate
