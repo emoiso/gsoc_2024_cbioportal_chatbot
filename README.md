@@ -109,3 +109,26 @@ Used Chroma to store embeddings. Exported vector databases with metadata in CSV 
 ## Docker
 Dockerized the whole project including all the  embedding databases: 
 Docker link: https://hub.docker.com/repository/docker/xinlingwang/chatbot/general
+
+instructions:
+1. Recommend create a Azure Openai gpt4 account(chat completions)
+
+2. Create a .env file contains content below:
+
+   AZURE_OPENAI_API_TYPE="azure"
+   
+   AZURE_OPENAI_ENDPOINT=“YOUR_AZURE_OPENAI_ENDPOINT”
+   
+   AZURE_OPENAI_API_VERSION_4="YOUR_AZURE_OPENAI_VERSION”
+   
+   AZURE_OPENAI_API_KEY="YOUR_AZURE_OPENAI_KEY”
+   
+   DEPLOYMENT_NAME_4="YOUR_AZURE_OPENAI_DEPLOYMENT_NAME"
+   
+   DEPLOYMENT_NAME_EMBEDDING="YOUR_AZURE_OPENAI_EMBEDDING_DEPLOYMENT_NAME"
+   
+   AZURE_OPENAI_API_VERSION_EMBEDDING="YOUR_AZURE_OPENAI_EMBEDDING_VERSION”
+
+3. To Run: docker run -p 7860:7860 --env-file .env xinlingwang/chatbot:with_ls
+
+4. Open browser and go to http://127.0.0.1:7860⁠
