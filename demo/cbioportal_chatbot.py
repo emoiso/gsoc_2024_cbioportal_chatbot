@@ -112,11 +112,6 @@ def initialize_chat_history_file():
     print(f"Chat history will be saved to: {chat_history_file}")
 
 
-def generate_filename():
-    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    return f"chat_history_{timestamp}.txt"
-
-
 def save_chat_history():
     global chat_history_file
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
