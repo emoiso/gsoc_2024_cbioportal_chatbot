@@ -3,18 +3,40 @@ Contributor: Xinling Wang
 
 Mentors: Augustin Luna, Ruslan Forostianov, Meysam Ghaffari
 ## About Project :
-This project has four chatbots which was trained on different datasets. Also, the project used route logic to combine 4 chatbots, and wrote a defined function to choose chatbot depending on user query.
+This project is about build and train a streaming chatbot on four datasets: Documentation site of cBioportal, Google group conversations, PMC papers used in studies, and OPENAPI. Also, the project used route logic to combine 4 chains, and wrote a routing logic function to choose chatbot depending on user query. The chatbot has chat history, indicators, and example questions, download button and footer (disclaimer) in user interface.
 
-Each chatbot has its own loader, metadate, splitter, prompt, retriever and independent vectorDB.
-
-### Details about each chatbot:
+### Details about each Chain:
 1. Dataset : Documentation site: https://github.com/cBioPortal/cbioportal/tree/master/docs 
-   
+   - This chain can retrieve data from cBioPortal documentation(markdown files) with a URL of document reference. 
+   - Markdown files were loaded and splitter by customised Markdown Loader. 
+   - Defined a function of adding url in metadata
+   - This database contains 81 markdown files
+   - Used Maximal marginal relevance as search type
+
 2. Dataset : Last 3 years of Google Conversation : https://groups.google.com/g/cbioportal 
+   - This chain can retrieve data from last 3 years Google Group Conversation from cBioPortal. The format of conversations is Mbox.  
+   - Cleaned mbox file by deleting base64 string image and extreme long error messages, which cannot be understand by AI. Convert mbox to json, combined messages from same conversations.
+   -  Used a json loader and defined separator, such as new line.
+   -  Cleaned the embedding queue in vector database which cause the size to be 100 times larger
 
 3. Dataset : 261 PubMed Central papers from all (~400) studies : https://github.com/cannin/gsoc_2024_cbioportal_chatbot/blob/main/demo/pubmed/data/cBioportal_study.json
+   - This chain can retrieve data from 200+ PubMed central papers used in 411 cBioPortal studies. 
+   - Defined a PubMed Central loader to download pmc papers from S3 and extract full-text to load
+   - Used PyMuPDFLoader (can read multi-column) to load pmc papers only in pdf format
+   - Added study information as metadata for each chunk in PMC database
+   - Contribute the PubMed Central loader to Langchain
 
 4. Dataset : cBioportal Endpoints (getAllstudiesUsingGET and getSamplesBykeywordsUsingGET)  https://www.cbioportal.org/api/swagger-ui/index.html 
+   - This chain can retrieve study and sample data from cBioportal Endpoints 
+   - Defined a retriever to handle API call responses
+   - Called the LLM a second time to generate a human-readable response.
+   - Generated a yaml file to support OpenAPI call
+   - Return “Sorry, no keywords of study found. ” when the default of api (return all the studies) is called.
+     
+5. Making plots:
+   - This chain can retrieve data from defined markdown plotting code example.
+   - This chain can generate code of making plot from study and sample informations.
+   - Bar chart, pie chart and scatter chart are all available to generate
 
 ### Embeddings
 Used Chroma to store embeddings. Exported vector databases with metadata in CSV files. https://drive.google.com/drive/folders/12lArAbk3kI8SkPb5W0ynn0eBCjCPWjTV?usp=sharing 
@@ -80,3 +102,6 @@ Used Chroma to store embeddings. Exported vector databases with metadata in CSV 
                         writer.writerow([id_value, text_model, document_content, embeddings])
    extract_and_write_data(db1, "your_file.csv")
 ```
+## Docker
+Dockerized the whole project including all the  embedding databases: 
+Docker link: https://hub.docker.com/repository/docker/xinlingwang/chatbot/general
