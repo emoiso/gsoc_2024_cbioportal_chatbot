@@ -3,7 +3,7 @@ Contributor: Xinling Wang
 
 Mentors: Augustin Luna, Ruslan Forostianov, Meysam Ghaffari
 ## About Project :
-This project is about build and train a streaming chatbot on four datasets: Documentation site of cBioportal, Google group conversations, PMC papers used in studies, and OPENAPI. Also, the project used route logic to combine 4 chains, and wrote a routing logic function to choose chatbot depending on user query. The chatbot has chat history, indicators, and example questions, download button and footer (disclaimer) in user interface.
+This project is about build and train a streaming chatbot on four datasets: Documentation site of cBioportal, Google group conversations, PMC papers used in studies, and OPENAPI. Also, the project used route logic to combine 5 chains, and wrote a routing logic function to choose chatbot depending on user query. The chatbot has chat history, indicators, and example questions, download button and footer (disclaimer) in user interface.
 
 ### Details about each Chain:
 1. **Documentation site** :
