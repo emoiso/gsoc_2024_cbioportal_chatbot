@@ -132,3 +132,12 @@ instructions:
 3. To Run: docker run -p 7860:7860 --env-file .env xinlingwang/chatbot:with_ls
 
 4. Open browser and go to http://127.0.0.1:7860⁠
+
+
+
+
+
+https://github.com/user-attachments/assets/39d05d7d-00fb-4267-8714-ca99d266adbb
+
+
+
