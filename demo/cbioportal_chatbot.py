@@ -104,6 +104,8 @@ def initialize_chat_history_file():
     temp_dir = 'saved_chats'  # Use temp directory
     current_path = os.getcwd()
     chat_history_file = current_path +"/" + temp_dir +"/" + filename
+    with open(chat_history_file, 'w') as file: # empty the file when restart this script
+        pass 
     print(f"Chat history will be saved to: {chat_history_file}")
 
 
