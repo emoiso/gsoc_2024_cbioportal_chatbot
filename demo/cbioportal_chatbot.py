@@ -25,9 +25,6 @@ import tempfile
 load_dotenv()
 _ = load_dotenv(find_dotenv())  # read local .env file
 
-os.environ["LANGCHAIN_TRACING_V2"] = "true"
-os.environ["LANGCHAIN_API_KEY"] = "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"
-
 
 #Azure_OpenAI llm    
 llm_azure = AzureChatOpenAI(
@@ -107,8 +104,6 @@ def initialize_chat_history_file():
     temp_dir = 'saved_chats'  # Use temp directory
     current_path = os.getcwd()
     chat_history_file = current_path +"/" + temp_dir +"/" + filename
-    with open(chat_history_file, 'w') as file:
-        pass 
     print(f"Chat history will be saved to: {chat_history_file}")
 
 
@@ -117,9 +112,10 @@ def save_chat_history():
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     print(chat_history_file)
     with open(chat_history_file, "a") as f:
-        for i in range(0, len(chat_history), 2):
-            user_message = chat_history[i]
-            ai_response = chat_history[i + 1] if i + 1 < len(chat_history) else ""
+        curr_history = chat_history[-2:]
+        for i in range(0, len(curr_history), 2):
+            user_message = curr_history[i]
+            ai_response = curr_history[i + 1] if i + 1 < len(curr_history) else ""
             f.write(f"({timestamp})\n")
             f.write(f"User: {user_message}\n")
             f.write(f"AI: {ai_response}\n")
@@ -160,20 +156,17 @@ def predict(message, history):
 
     except openai.BadRequestError as e:
         gpt_response = "Sorry, no keywords of study found. Please try again with keywords that applies to name and cancer type of the studies" 
-   
+        print(e)
     except openai.APIConnectionError as e:
         gpt_response = "Server connection error: {}".format(e)
-
+        print(e)
     except Exception as e:
         gpt_response = "Error: {}".format(e)
         print(e)
 
     # Save chat history after every interaction
     saved_file = save_chat_history()
-    print(f"Chat history saved to: {saved_file}")
     time.sleep(0.1)
-
-    gr.DownloadButton(value=str(saved_file))
     
     partial_message = "Source Document Type : " + chain_info + "\n"
     
@@ -201,9 +194,10 @@ with gr.Blocks() as demo:
                     title="cBioPortal ChatBot",
                     # css="""footer{display:none !important}""",
                     examples=['How to install cBioportal in docker', 'what are important gene list in "Comprehensive molecular portraits of human breast tumors"', 
-                    'Give me some studies related to bone', 'can u give me some samples related to TCGA-OR-A5J1-01', 'Tell me a joke', 'how to make a plot of the top 10 most mutated genes group by hugoGeneSymbol'],
+                    'Give me some studies related to bone', 'can u give me some samples related to TCGA-OR-A5J1-01', 'Tell me a joke', 'how to write code to plot the top 10 most mutated genes group by hugoGeneSymbol'],
                     chatbot=chatbot)
-    
+
+    # write html to add a download button
     gr.HTML(f"""
         <a href= "/file={str(chat_history_file)}" download>
             <button style="
@@ -227,7 +221,7 @@ with gr.Blocks() as demo:
     
     myfooter = gr.HTML("""
                     <footer class="disclaimer">
-                        <p style="white-space: pre-line;color: #9E9E9E">\n\nThis chatbot can make mistakes. Check important info.</p>
+                        <p style="white-space: pre-line;color: #9E9E9E">\nThis chatbot can make mistakes. Check important info.</p>
                     </footer>
                     <style>
                         .disclaimer {
@@ -242,5 +236,4 @@ with gr.Blocks() as demo:
                     </style>"""
                        )
  
-demo.launch(allowed_paths=[str(chat_history_file)],
-            share=True)
+demo.launch(allowed_paths=[str(chat_history_file)], share=True)
