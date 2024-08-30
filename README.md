@@ -9,16 +9,17 @@ This project is about build and train a streaming chatbot on four datasets: Docu
 1. **Documentation site** :
    Dataset : https://github.com/cBioPortal/cbioportal/tree/master/docs 
    - This chain can retrieve data from cBioPortal documentation(markdown files) with a URL of document reference. 
-   - Markdown files were loaded and splitter by customised Markdown Loader. 
-   - Defined a function of adding documentation file url in metadata
+   - Markdown files were loaded and splitter by customised [Markdown loader](https://github.com/cannin/gsoc_2024_cbioportal_chatbot/blob/main/demo/documentation_site/md_loader.py) . 
+   - Defined a function of adding documentation file url in metadata(inside Markdown loader)
    - This database contains 81 markdown files
-   - Used Maximal marginal relevance as search type
+   - Used Maximal marginal relevance as search type this [chain](https://github.com/cannin/gsoc_2024_cbioportal_chatbot/blob/main/demo/documentation_site/markdown_demo.py)
 
 2.  **Google Conversation chain** :
    Dataset: https://groups.google.com/g/cbioportal 
     - This chain can retrieve data from last 3 years Google Group Conversation from cBioPortal. The format of conversations is Mbox.  
-    - Cleaned mbox file by deleting base64 string image and extreme long error messages, which cannot be understand by AI. Convert mbox to json, combined messages from same conversations.
-    -  Used a json loader and defined separator, such as new line, to load and split data.
+    - Cleaned mbox file by deleting base64 string image and only keep email_from, email_to, email_subject,and email_text, also converted mbox to json in this [file](https://github.com/cannin/gsoc_2024_cbioportal_chatbot/blob/main/demo/mbox/mbox_to_json.py)
+    - combined messages from same conversations in this [file](https://github.com/cannin/gsoc_2024_cbioportal_chatbot/blob/main/demo/mbox/combine_res.py)
+    -  Used a json loader and defined separator, such as new line, to load and split data using [load_and_split function](https://github.com/cannin/gsoc_2024_cbioportal_chatbot/blob/main/demo/mbox/mbox_chatbot.py)
     -  Cleaned the embedding queue in vector database by deleting repeated rows which cause the size to be 100 times larger
 
 3. **PubMed Central papers chain** :
