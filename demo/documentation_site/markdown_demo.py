@@ -1,4 +1,4 @@
- from langchain.document_loaders import DirectoryLoader
+from langchain_community.document_loaders import DirectoryLoader
 import os
 from langchain_core.runnables import RunnablePassthrough 
 from langchain_core.output_parsers import StrOutputParser
@@ -11,6 +11,11 @@ from langchain_openai import AzureOpenAIEmbeddings
 from langchain_core.prompts import ChatPromptTemplate
 from langchain.retrievers.self_query.base import SelfQueryRetriever
 from langchain.chains.query_constructor.base import AttributeInfo
+from langchain_core.runnables import RunnableLambda
+from langchain.chains import create_history_aware_retriever
+from langchain_core.prompts import MessagesPlaceholder
+from langchain.chains.combine_documents import create_stuff_documents_chain
+from langchain.chains import create_retrieval_chain
 
 
 load_dotenv()
@@ -20,14 +25,14 @@ _ = load_dotenv(find_dotenv())  # read local .env file
 llm_azure = AzureChatOpenAI(
     azure_endpoint=os.environ["AZURE_OPENAI_ENDPOINT"], 
     openai_api_key=os.environ["AZURE_OPENAI_API_KEY"],
-    openai_api_version=os.environ["OPENAI_API_VERSION"],
-    deployment_name=os.environ["DEPLOYMENT_NAME"],
-    openai_api_type=os.environ["OPENAI_API_TYPE"]
+    openai_api_version=os.environ["AZURE_OPENAI_API_VERSION_4"],
+    deployment_name=os.environ["DEPLOYMENT_NAME_4"],
+    openai_api_type=os.environ["AZURE_OPENAI_API_TYPE"]
 )
 
 embeddings = AzureOpenAIEmbeddings(
     azure_deployment=os.environ["DEPLOYMENT_NAME_EMBEDDING"],
-    openai_api_version=os.environ["OPENAI_API_VERSION"],
+    openai_api_version=os.environ["AZURE_OPENAI_API_VERSION_4"],
     azure_endpoint=os.environ["AZURE_OPENAI_ENDPOINT"],
     api_key=os.environ["AZURE_OPENAI_API_KEY"]
 )
@@ -38,7 +43,8 @@ embeddings = AzureOpenAIEmbeddings(
 #     persist_directory="vectordb/chroma/markdown"
 # )
 # vectordb.persist()
-vectordb = Chroma(persist_directory="demo/vectordb/chroma/documentation_site", embedding_function=embeddings)
+vectordb = Chroma(persist_directory="demo/vectordb/chroma/markdown", embedding_function=embeddings)
+
 
 # self-query retriever
 document_content_description = "documentation site of cBioportal "
@@ -53,22 +59,30 @@ SelfQuery_Retriever = SelfQueryRetriever.from_llm(
     llm_azure,
     vectordb,
     document_content_description,
-    metadata_field_info
+    metadata_field_info,
+    search_kwargs={'k': 3}
+    # search_type="mmr"
 )
 
 # retriever = vectordb.as_retriever(k=3)
+
 # build prompt template
-ANSWER_PROMPT = """Answer the question based only on the following context, 
+ANSWER_PROMPT = """You are a professional assistant.
+                Answer the question based only on the following context and chat history, "
                 and return the url of all the contexts :
+
+                Do not return source of contexts
 {context}
 Question: {question}
 """
+
 
 prompt = ChatPromptTemplate.from_template(ANSWER_PROMPT)
 
 
 def get_documentation_site_chain():
     chain = (
+        RunnableLambda(lambda x: x['question']) |
         {"context": SelfQuery_Retriever, "question": RunnablePassthrough()} 
         | prompt  # choose a prompt
         | llm_azure  # choose a llm
@@ -77,29 +91,32 @@ def get_documentation_site_chain():
     return chain
 
 
-def getAnswer(question):
-    chain = get_documentation_site_chain()
-    ans = chain.invoke(question)
-    return ans
+def main():
+    def getAnswer(question):
+        chain = get_documentation_site_chain()
+        ans = chain.invoke(question)
+        return ans
+
+    # User Interface
+    def predict(message, history):
+        history_langchain_format = []
+        for human, ai in history:
+            history_langchain_format.append(HumanMessage(content=human))
+            history_langchain_format.append(AIMessage(content=ai))
+        history_langchain_format.append(HumanMessage(content=message))
+        gpt_response = getAnswer(message)
+        return gpt_response
+
+    chatbot = gr.Chatbot(  # uploaded image of user and cBioportal as avatar 
+        [],
+        elem_id="chatbot",
+        bubble_full_width=False,
+        avatar_images=("demo/sample_data/user_avatar.png", 
+                       "demo/sample_data/chatbot_avatar.png"),
+    )
+
+    gr.ChatInterface(predict, title="cBioPortal Markdown ChatBot", chatbot=chatbot).launch()
 
 
-# # User Interface
-# def predict(message, history):
-#     history_langchain_format = []
-#     for human, ai in history:
-#         history_langchain_format.append(HumanMessage(content=human))
-#         history_langchain_format.append(AIMessage(content=ai))
-#     history_langchain_format.append(HumanMessage(content=message))
-#     gpt_response = getAnswer(message)
-#     return gpt_response
-
-
-# chatbot = gr.Chatbot(  # uploaded image of user and cBioportal as avatar 
-#     [],
-#     elem_id="chatbot",
-#     bubble_full_width=False,
-#     avatar_images=("demo/sample_data/user_avatar.png", 
-#                    "demo/sample_data/chatbot_avatar.png"),
-# )
-
-# gr.ChatInterface(predict, title="cBioPortal Markdown ChatBot", chatbot=chatbot).launch()
+if __name__ == '__main__':
+    main.run()
