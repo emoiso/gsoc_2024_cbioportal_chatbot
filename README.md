@@ -6,14 +6,14 @@ Mentors: Augustin Luna, Ruslan Forostianov, Meysam Ghaffari
 This project is about build and train a streaming chatbot on four datasets: Documentation site of cBioportal, Google group conversations, PMC papers used in studies, and OPENAPI. Also, the project used route logic to combine 5 chains, and wrote a routing logic function to choose chatbot depending on user query. The chatbot has chat history, indicators, and example questions, download button and footer (disclaimer) in user interface.
 
 ### Details about each Chain:
-1. **Documentation site** :
+1. **Documentation site chain** :
    Dataset : https://github.com/cBioPortal/cbioportal/tree/master/docs 
    - This chain can retrieve data from cBioPortal documentation(markdown files) with a URL of document reference. 
    - Markdown files were loaded and splitter by customised [Markdown loader](https://github.com/cannin/gsoc_2024_cbioportal_chatbot/blob/main/demo/documentation_site/md_loader.py) . 
    - Defined a function of adding documentation file url in metadata(inside Markdown loader)
    - This database contains 81 markdown files
    - Used Maximal marginal relevance as search type this [chain](https://github.com/cannin/gsoc_2024_cbioportal_chatbot/blob/main/demo/documentation_site/markdown_demo.py)
-
+     
 2.  **Google Conversation chain** :
    Dataset: https://groups.google.com/g/cbioportal 
     - This chain can retrieve data from last 3 years Google Group Conversation from cBioPortal. The format of conversations is Mbox.  
@@ -134,15 +134,34 @@ instructions:
 
 4. Open browser and go to http://0.0.0.0:7860⁠
 
+## Update database
+### Step 1. Load new file
+1. Documentation:
+   1. To add new files, you can just use [Markdown loader](https://github.com/cannin/gsoc_2024_cbioportal_chatbot/blob/main/demo/documentation_site/md_loader.py)  to load and split.
+
+2. Google Conversation:
+   1. download the latest google group conversation. This [link](https://support.google.com/accounts/answer/3024190?hl=en) can help to download. 
+   2. Secondly, clean the mbox file downloaded to only extract email_from, email_to, email_subject,and email_text, also converted mbox to json using [file](https://github.com/cannin/gsoc_2024_cbioportal_chatbot/blob/main/demo/mbox/mbox_to_json.py)
+   3. load the file using load_and_split function in [mbox_chatbot](https://github.com/cannin/gsoc_2024_cbioportal_chatbot/blob/main/demo/mbox/mbox_chatbot.py)
+
+3. OpenAPI (add new endpoints):
+   1. Use [swagger editor](https://editor.swagger.io/) to convert cbioportal api to convert and save as YAML.
+   2. Add the newpoint info from YAML file into the existing [OPENAPI yaml file](https://github.com/cannin/gsoc_2024_cbioportal_chatbot/blob/main/demo/openapi/cBioPortal_openapi_3.yaml)
+   3. No needs to do step 2.
+      
+4. PubMed Central papers:
+   1. Use [add_new_paper.py](https://github.com/cannin/gsoc_2024_cbioportal_chatbot/blob/main/demo/pubmed/add_new_paper.py) to download and extract paper
+   2. Using pubmed loader to load and split
+   
+### Step 2. Create embedding for new file
+ 1. create embedding for new file using create_and_save_embedding function above.
+ 2. The last step is combine the embedding with existing markdown embedding databse using [combine_db](https://github.com/cannin/gsoc_2024_cbioportal_chatbot/blob/main/demo/combine_and_count_db.py)
 
 
 
 
-
+# Screen Video for project
 https://github.com/user-attachments/assets/58568feb-cd47-4767-935a-64208d66ece7
-
-
-
 
 
 
