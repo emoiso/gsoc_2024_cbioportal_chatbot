@@ -38,4 +38,4 @@ def add_new_paper(pmid):
         print(f"This {pmid} has no pmcid: {e}")
 
 
-add_new_paper("36517593")
+add_new_paper("36517593")  # example of pmid for new paper
