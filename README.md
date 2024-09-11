@@ -130,7 +130,7 @@ instructions:
    
    AZURE_OPENAI_API_VERSION_EMBEDDING="YOUR_AZURE_OPENAI_EMBEDDING_VERSION”
 
-3. To Run: docker run -p 7860:7860 --env-file .env xinlingwang/chatbot:final
+3. To Run: docker run -p 7860:7860 --env-file .env xinlingwang/chatbot:new
 
 4. Open browser and go to http://0.0.0.0:7860⁠
 
