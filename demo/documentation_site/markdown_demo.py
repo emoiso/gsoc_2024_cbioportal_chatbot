@@ -91,32 +91,4 @@ def get_documentation_site_chain():
     return chain
 
 
-def main():
-    def getAnswer(question):
-        chain = get_documentation_site_chain()
-        ans = chain.invoke(question)
-        return ans
 
-    # User Interface
-    def predict(message, history):
-        history_langchain_format = []
-        for human, ai in history:
-            history_langchain_format.append(HumanMessage(content=human))
-            history_langchain_format.append(AIMessage(content=ai))
-        history_langchain_format.append(HumanMessage(content=message))
-        gpt_response = getAnswer(message)
-        return gpt_response
-
-    chatbot = gr.Chatbot(  # uploaded image of user and cBioportal as avatar 
-        [],
-        elem_id="chatbot",
-        bubble_full_width=False,
-        avatar_images=("demo/sample_data/user_avatar.png", 
-                       "demo/sample_data/chatbot_avatar.png"),
-    )
-
-    gr.ChatInterface(predict, title="cBioPortal Markdown ChatBot", chatbot=chatbot).launch()
-
-
-if __name__ == '__main__':
-    main.run()
