@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 import os
 from langchain_core.runnables import RunnablePassthrough 
 from langchain_core.output_parsers import StrOutputParser
@@ -240,8 +239,3 @@ with gr.Blocks() as demo:
                        )
  
 demo.launch(allowed_paths=[str(chat_history_file)], share=True)
-=======
-version https://git-lfs.github.com/spec/v1
-oid sha256:f91e8aa31a7a90cee9ff13324572af71888d815d480b23d47ca3b9ef873fd698
-size 3718
->>>>>>> 1279ad6 (implement route logic to map user query with diff chatbots)
