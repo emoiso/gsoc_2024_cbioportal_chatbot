@@ -60,8 +60,8 @@ SelfQuery_Retriever = SelfQueryRetriever.from_llm(
     vectordb,
     document_content_description,
     metadata_field_info,
-    search_kwargs={'k': 3}
-    # search_type="mmr"
+    search_kwargs={'k': 3},
+    search_type="mmr"
 )
 
 # retriever = vectordb.as_retriever(k=3)
@@ -69,9 +69,13 @@ SelfQuery_Retriever = SelfQueryRetriever.from_llm(
 # build prompt template
 ANSWER_PROMPT = """You are a professional assistant.
                 Answer the question based only on the following context and chat history, "
+                Below is a set of related Q&A examples that includes both good and bad examples. For each example:
+                If it is marked as a 'Good example,' you may refer the conversation. Sometimes user can give important info
+                If it is marked as a 'Bad example,' improve the answer to better meet the user's needs.
                 and return the url of all the contexts :
 
                 Do not return source of contexts
+{related_QA}
 {context}
 Question: {question}
 """
@@ -83,7 +87,7 @@ prompt = ChatPromptTemplate.from_template(ANSWER_PROMPT)
 def get_documentation_site_chain():
     chain = (
         RunnableLambda(lambda x: x['question']) |
-        {"context": SelfQuery_Retriever, "question": RunnablePassthrough()} 
+        {"related_QA": RunnablePassthrough(), "context": SelfQuery_Retriever, "question": RunnablePassthrough()} 
         | prompt  # choose a prompt
         | llm_azure  # choose a llm
         | StrOutputParser()
@@ -91,4 +95,32 @@ def get_documentation_site_chain():
     return chain
 
 
+def main():
+    def getAnswer(question):
+        chain = get_documentation_site_chain()
+        ans = chain.invoke(question)
+        return ans
 
+    # User Interface
+    def predict(message, history):
+        history_langchain_format = []
+        for human, ai in history:
+            history_langchain_format.append(HumanMessage(content=human))
+            history_langchain_format.append(AIMessage(content=ai))
+        history_langchain_format.append(HumanMessage(content=message))
+        gpt_response = getAnswer(message)
+        return gpt_response
+
+    chatbot = gr.Chatbot(  # uploaded image of user and cBioportal as avatar 
+        [],
+        elem_id="chatbot",
+        bubble_full_width=False,
+        avatar_images=("demo/sample_data/user_avatar.png", 
+                       "demo/sample_data/chatbot_avatar.png"),
+    )
+
+    gr.ChatInterface(predict, title="cBioPortal Markdown ChatBot", chatbot=chatbot).launch()
+
+
+if __name__ == '__main__':
+    main.run()

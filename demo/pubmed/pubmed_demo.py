@@ -32,8 +32,6 @@ from langchain.chains.combine_documents import create_stuff_documents_chain
 from langchain.chains import create_retrieval_chain
 
 
-
-
 #langchain-core==0.2.3
 def load_json_file(path):
     with open(path) as f:
@@ -256,66 +254,17 @@ def update_vectordb_with_docs(docs, embeddings, base_persist_directory):
 # vectordb_total = update_vectordb_with_docs(docs, embeddings, "vectordb/chroma/pubmed/pdf2")
 vectordb_total = Chroma(persist_directory="demo/vectordb/chroma/pubmed/paper_and_pdf", embedding_function=embeddings)
 
-
-# # self-query retriever
-# document_content_description = "full text of Pubmed papers "
-# metadata_field_info = [
-#     AttributeInfo(
-#         name="pmc_id",
-#         description="The id for pubmed paper, start with PMC, useful to search",
-#         type="string",
-#     ),
-#     AttributeInfo(
-#         name="title",
-#         description="The title for pubmed paper",
-#         type="string",
-#     ),
-#     AttributeInfo(
-#         name="name",
-#         description="The name of study using this pubmed paper",
-#         type="string",
-#     ),
-#     AttributeInfo(
-#         name="description",
-#         description="The description of study using this pubmed paper",
-#         type="string",
-#     ),
-#     AttributeInfo(
-#         name="groups",
-#         description="The groups of study using this pubmed paper",
-#         type="string",
-#     ),
-#     AttributeInfo(
-#         name="allSampleCount",
-#         description="The allSampleCount of study using this pubmed paper",
-#         type="int",
-#     ),
-#     AttributeInfo(
-#         name="studyId",
-#         description="The studyId of study using this pubmed paper",
-#         type="string",
-#     ),
-#     AttributeInfo(
-#         name="name",
-#         description="The name of study using this pubmed paper",
-#         type="string",
-#     ),
-# ]
-# SelfQuery_Retriever = SelfQueryRetriever.from_llm(
-#     llm_azure,
-#     vectordb_total,
-#     document_content_description,
-#     metadata_field_info
-# )
-
-
 retriever = vectordb_total.as_retriever(k=3)
 
 # build prompt template
-ANSWER_PROMPT = ("You are a professional assistant. Answer questions using content & metadata & chat history."
+ANSWER_PROMPT = ("You are a professional assistant."
+                 "Answer questions content & metadata, and chat history if needed."
+                 "Below is a set of related Q&A examples that includes both good and bad examples. For each example:"
+                 "If it is marked as a 'Good example,' you may refer the conversation. Sometimes user can give important info"
+                 "If it is marked as a 'Bad example,' improve the answer to better meet the user's needs."
                  "Also, ignore the context if it is a reference."
-                 "Answer the question based only on the following context, "
-                 " and return the pmc_id, pmid, studyID of all the contexts :"
+                 "return the pmc_id, pmid, studyID of all the contexts :"
+"{related_QA}"                
 "{context}"
 "Question: {question}"
 )
@@ -337,7 +286,7 @@ prompt = ChatPromptTemplate.from_template(ANSWER_PROMPT)
 def get_pubmed_chain():
     chain = (
         RunnableLambda(lambda x: x['question']) |
-        {"context": retriever, "question": RunnablePassthrough()} 
+        {"related_QA": RunnablePassthrough(), "context": retriever, "question": RunnablePassthrough()} 
         | prompt  # choose a prompt
         | llm_azure  # choose a llm
         | StrOutputParser()
@@ -347,3 +296,37 @@ def get_pubmed_chain():
     return chain
 
 
+def main():
+    # build a chain # lambda x:
+    def get_response(question):
+        chain = get_pubmed_chain()
+        ans = chain.invoke(question)
+        return ans
+
+    # User Interface
+    def predict(message, history):
+        history_langchain_format = []
+        for human, ai in history:
+            history_langchain_format.append(HumanMessage(content=human))
+            history_langchain_format.append(AIMessage(content=ai))
+        history_langchain_format.append(HumanMessage(content=message))
+        gpt_response = get_response(message)
+        return gpt_response
+
+    chatbot = gr.Chatbot(  # uploaded image of user and cBioportal as avatar 
+        [],
+        elem_id="chatbot",
+        bubble_full_width=False,
+        avatar_images=("demo/sample_data/user_avatar.png", 
+                    "demo/sample_data/chatbot_avatar.png"),
+    )
+
+    gr.ChatInterface(
+        predict, 
+        title="cBioPortal pubmed ChatBot", 
+        examples=['What is PMC_ID PMC2671642 about?', 'What papers used in studyID acbc_mskcc_2015'],
+        chatbot=chatbot).launch()
+
+
+if __name__ == '__main__':
+    main.run()

@@ -24,16 +24,26 @@ _ = load_dotenv(find_dotenv())  # read local .env file
 llm_azure = AzureChatOpenAI(
     azure_endpoint=os.environ["AZURE_OPENAI_ENDPOINT"], 
     openai_api_key=os.environ["AZURE_OPENAI_API_KEY"],
-    openai_api_version=os.environ["OPENAI_API_VERSION"],
-    deployment_name=os.environ["DEPLOYMENT_NAME"],
-    openai_api_type=os.environ["OPENAI_API_TYPE"]
+    openai_api_version=os.environ["AZURE_OPENAI_API_VERSION_4"],
+    deployment_name=os.environ["DEPLOYMENT_NAME_4"],
+    openai_api_type=os.environ["AZURE_OPENAI_API_TYPE"]
 )
 
+
+# openapi_prompt = """ 
+#         Select projection of DETAILED to call the api ,
+#         Have to pick a keyword
+#         if you get nothing in api call, just say you didn't find anything.
+#         Below is a set of related Q&A examples that includes both good and bad examples. For each example:
+#         If it is marked as a 'Good example,' you may refer the conversation. Sometimes user can give important info
+#         If it is marked as a 'Bad example,' improve the answer to better meet the user's needs.
+#         "{related_QA}"
+#         "{question}"
+#         """
 openapi_prompt = """ 
         Select projection of DETAILED to call the api ,
-        if user mentioned meta, summary or ID , then use that for projection instead.
+        Have to pick a keyword
         if you get nothing in api call, just say you didn't find anything.
-
         "{question}"
         """
 prompt = PromptTemplate(template=openapi_prompt, input_variables=["question"])
@@ -65,8 +75,18 @@ def call_openapi(question: str):
 
 
 answer_prompt = """
-You are a professional assistant, manage the retrieved data to human language and return it to users,
-if response is empty, just say you didn't find anything
+All your job is converting retrieved data to human language 
+Make sure the data integrity 
+if response is empty, just say you didn't find anything. 
+
+return all data to user and write code to plot if needed
+Also, use chat history to response if needed
+
+Below is a set of related Q&A examples that includes both good and bad examples. For each example:
+If it is marked as a 'Good response,' you may use it directly if answer user questions
+If it is marked as a  'Good instruction', you have to pay attention and follow it.  
+If it is marked as a 'Bad example,' improve the answer to better meet the user's needs.
+{related_QA}
 Question : {question}
 {context}
 """
@@ -74,28 +94,23 @@ prompt_chatbot = ChatPromptTemplate.from_template(answer_prompt)
 # build a chain # lambda x:
 
 
-def get_response(question):
+def get_openapi_chain(question):
     openapi_response = call_openapi(question)
-    # retriever = RunnableParallel(chain_cBio(question))
     chain = (
-            {"question": RunnablePassthrough(), "context": APIRetriever(document=openapi_response)}
-            | prompt_chatbot  
-            | llm_azure
-            | StrOutputParser()
-    )
-    ans = chain.invoke(question)
-    return ans
-
-
-def get_openapi_chain(openapi_response):
-    chain = (
-            {"question": RunnablePassthrough(), "context": APIRetriever(document=openapi_response)}
+            {"related_QA": RunnablePassthrough(), "question": RunnablePassthrough(), "context": APIRetriever(document=openapi_response)}
             | prompt_chatbot  
             | llm_azure
             | StrOutputParser()
     )
     return chain
 
+
+def get_response(question):
+    openapi_response = call_openapi(question)
+    # retriever = RunnableParallel(chain_cBio(question))
+    chain = get_openapi_chain(openapi_response)
+    ans = chain.invoke(question)
+    return ans
 
 
 # # User Interface
