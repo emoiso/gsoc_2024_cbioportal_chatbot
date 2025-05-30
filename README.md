@@ -109,7 +109,7 @@ Used Chroma to store embeddings. Exported vector databases with metadata in CSV 
 ```
 ## Docker
 Dockerized the whole project including all the  embedding databases: 
-Docker link: https://hub.docker.com/repository/docker/xinlingwang/chatbot/general
+Docker link: https://hub.docker.com/r/xinlingwang/chatbot
 
 instructions:
 1. Recommend create a Azure Openai gpt4 account(chat completions)
